@@ -13,7 +13,9 @@ public class Reversi {
     private static int indexOfInactiveUser = 1;
     private static final int user1Value = 0;
     private static final int user2Value = 1;
-    private static int[] usersScores = {2, 2};
+
+    private static int skipRoundCounter = 0;
+    private static final int[] usersScores = {0, 0};
 
     public Reversi() {
     }
@@ -41,6 +43,7 @@ public class Reversi {
                 initGameConfig();
             }
             board = new Board(gameConfig.boardSize());
+            setInitialScore();
         }
         while (isGameRunning) {
             playGame();
@@ -50,32 +53,66 @@ public class Reversi {
     private void playGame() {
         try {
             board.printBoard();
+            System.out.printf("SCORE: ->User 1<- %d | %d ->User 2<-\n", usersScores[0], usersScores[1]);
             if (!isGameOver()) {
-                System.out.printf("SCORE: ->User 1<- %d | %d ->User 2<-\n", usersScores[0], usersScores[1]);
-                if (gameConfig.usersQuantity() == 2 || indexOfActiveUser == user1Value) {
-                    MoveCoords userCoords = getMoveCoords();
-                    makeMove(userCoords);
-                } else if (gameConfig.usersQuantity() == 1 && indexOfActiveUser == user2Value) {
-                    MoveCoords botCoords = getBotCoords();
-                    makeBotMove(botCoords);
+                if (isAnyMoves()) {
+                    if (gameConfig.usersQuantity() == 2 || indexOfActiveUser == user1Value) {
+                        System.out.println("HAVE FUTURE MOVE");
+                        MoveCoords userCoords = getMoveCoords();
+                        makeMove(userCoords);
+                    } else if (gameConfig.usersQuantity() == 1 && indexOfActiveUser == user2Value) {
+                        MoveCoords botCoords = getBotCoords();
+                        makeBotMove(botCoords);
+                    }
+                    setActiveUser();
+                } else {
+                    throw new NotFoundMoveException(String.format("User %d has skipped round", indexOfActiveUser + 1));
                 }
             }
-            indexOfActiveUser ^= 1;
-            indexOfInactiveUser ^= 1;
         } catch (IllegalArgumentException ex) {
             System.out.println(ex.getMessage());
         } catch (NotFoundMoveException ex) {
+            setActiveUser();
             System.out.println(ex.getMessage());
-            indexOfActiveUser ^= 1;
-            indexOfInactiveUser ^= 1;
+            skipRoundCounter++;
+            if (skipRoundCounter == 2) {
+                findWinner();
+                isGameRunning = false;
+            }
         }
+    }
+
+    private boolean isAnyMoves() throws NotFoundMoveException {
+        int emptyValuesQuantity = 0;
+        for (int i = 0; i < board.size; i++) {
+            for (int j = 0; j < board.size; j++) {
+                if (board.arr[i][j] == board.emptyValue) {
+                    emptyValuesQuantity += 1;
+                    if (checkMovePossibility(i, j, false)) {
+                        System.out.println("ABLE: " + (i + 1) + " " + (j + 1));
+                        return true;
+                    }
+                }
+
+            }
+        }
+        if (emptyValuesQuantity == 0) {
+            throw new NotFoundMoveException("Board is full.");
+        }
+        throw new NotFoundMoveException(String.format("User %d has skipped round.", indexOfActiveUser + 1));
+    }
+
+    private void setActiveUser() {
+        indexOfActiveUser ^= 1;
+        indexOfInactiveUser ^= 1;
     }
 
     private MoveCoords getBotCoords() throws NotFoundMoveException {
         for (int i = 0; i < board.size; i++) {
             for (int j = 0; j < board.size; j++) {
-                if (isMovePossible(i, j)) {
+                if (checkMovePossibility(i, j, false)) {
                     System.out.printf("Bot try (%d %d)\n", i + 1, j + 1);
+//                    checkMovePossibility(i, j, true);
                     return new MoveCoords(i, j);
                 }
             }
@@ -86,6 +123,7 @@ public class Reversi {
 
     private void makeBotMove(MoveCoords botCoords) {
         board.setValue(botCoords.x, botCoords.y, user2Value);
+//        checkMovePossibility(botCoords.x, botCoords.y, true);
         System.out.printf("Bot move is: (%d %d)\n", botCoords.x + 1, botCoords.y + 1);
     }
 
@@ -99,19 +137,9 @@ public class Reversi {
     }
 
     private void findWinner() {
-        int user1Points = 0, user2Points = 0;
-        for (int i = 0; i < board.size; i++) {
-            for (int j = 0; j < board.size; j++) {
-                if (board.arr[i][j] == user1Value) {
-                    user1Points++;
-                } else {
-                    user2Points++;
-                }
-            }
-        }
-        if (user1Points > user2Points) {
+        if (usersScores[0] > usersScores[1]) {
             System.out.println("Game over. User 1 has won!\n");
-        } else if (user1Points < user2Points) {
+        } else if (usersScores[0] < usersScores[1]) {
             System.out.println("Game over. User 2 has won!\n");
         } else {
             System.out.println("Game over. The game ended in a draw.\n");
@@ -137,127 +165,139 @@ public class Reversi {
     }
 
     private void makeMove(MoveCoords coords) {
-        if (!isMovePossible(coords.x, coords.y)) {
+        if (!checkMovePossibility(coords.x, coords.y, false)) {
             throw new IllegalArgumentException("Error: move isn't possible!");
         }
+        checkMovePossibility(coords.x, coords.y, true);
         board.setValue(coords.x, coords.y, indexOfActiveUser);
         usersScores[indexOfActiveUser] += 1;
-        //board.printArray();
     }
 
     private record MoveInfo(int score, boolean isFirst) {
     }
 
-    private boolean isMovePossible(int x, int y) {
+    private void setInitialScore() {
+        for (int i = 0; i < board.size; i++) {
+            for (int j = 0; j < board.size; j++) {
+                if (board.arr[i][j] == indexOfActiveUser) {
+                    usersScores[indexOfActiveUser] += 1;
+                } else if (board.arr[i][j] == indexOfInactiveUser) {
+                    usersScores[indexOfInactiveUser] += 1;
+                }
+            }
+        }
+    }
+
+    private boolean checkMovePossibility(int x, int y, boolean confirmMoves) {
         int active = indexOfActiveUser;
-        int size = board.size;
         var arr = board.arr;
+        var size = board.size;
         var emptyValue = board.emptyValue;
-        //var inactiveUser = indexOfInactiveUser;
 
-        //System.out.printf("%d %d %d %d \n", active, inactiveUser, arr[x][y], board.getEmptyValue());
-
-//        System.out.println("Vertical score: " + getMoveScore(checkTopVertical(x, y, false), checkBottomVertical(x, y, false)));
-//        System.out.println("Horizontal score: " + getMoveScore(checkLeftHorizontal(x, y, false), checkRightHorizontal(x, y, false)));
-//        System.out.println("Main score: " + getMoveScore(checkLeftMainDiagonal(x, y, false), checkRightMainDiagonal(x, y, false)));
-//        System.out.println("Anti score: " + getMoveScore(checkLeftAntiDiagonal(x, y, false), checkRightAntiDiagonal(x, y, false)));
         var vScore = getMoveScore(checkTopVertical(x, y, false), checkBottomVertical(x, y, false));
         var hScore = getMoveScore(checkLeftHorizontal(x, y, false), checkRightHorizontal(x, y, false));
         var mScore = getMoveScore(checkLeftMainDiagonal(x, y, false), checkRightMainDiagonal(x, y, false));
         var aScore = getMoveScore(checkLeftAntiDiagonal(x, y, false), checkRightAntiDiagonal(x, y, false));
-//        System.out.println("Vertical score: " + vScore);
-//        System.out.println("Horizontal score: " + hScore);
-//        System.out.println("Main score: " + mScore);
-//        System.out.println("Anti score: " + aScore);
+
+//        if  (arr[x][y] == active) {
+//            return false;
+//        }
 
 //        System.out.println("Vertical score: " + vScore);
 //        System.out.println("Horizontal score: " + hScore);
 //        System.out.println("Main score: " + mScore);
 //        System.out.println("Anti score: " + aScore);
+//        board.printArray();
+//        System.out.println("Coords: " + (x + 1) + " " + (y + 1));
 
-        int score;
         boolean isPossible = false;
-        //board.printArray();
         if (x < size - 1 && arr[x + 1][y] != emptyValue && arr[x + 1][y] != active) {
-            if (vScore.score > 0) {
-                score = checkTopVertical(x, y, true);
-                usersScores[indexOfActiveUser] += score;
-                usersScores[indexOfInactiveUser] -= score;
+            if (vScore > 0) {
                 isPossible = true;
+                //System.out.println(1);
+                if (confirmMoves) {
+                    confirmMove(checkTopVertical(x, y, true));
+                }
             }
         }
-        ////board.printArray();
         if (1 < x && arr[x - 1][y] != emptyValue && arr[x - 1][y] != active) {
-            if (vScore.score > 0) {
-                score = checkBottomVertical(x, y, true);
-                usersScores[indexOfActiveUser] += score;
-                usersScores[indexOfInactiveUser] -= score;
+            if (vScore > 0) {
                 isPossible = true;
+                //System.out.println(2);
+                if (confirmMoves) {
+                    confirmMove(checkBottomVertical(x, y, true));
+                }
             }
         }
-        //board.printArray();
         if (y < size - 1 && arr[x][y + 1] != emptyValue && arr[x][y + 1] != active) {
-            if (hScore.score > 0) {
-                score = checkRightHorizontal(x, y, true);
-                usersScores[indexOfActiveUser] += score;
-                usersScores[indexOfInactiveUser] -= score;
+            if (hScore > 0) {
                 isPossible = true;
+                //System.out.println(3);
+                if (confirmMoves) {
+                    confirmMove(checkRightHorizontal(x, y, true));
+                }
             }
         }
         if (1 < y && arr[x][y - 1] != emptyValue && arr[x][y - 1] != active) {
-            if (hScore.score > 0) {
-                score = checkLeftHorizontal(x, y, true);
-                usersScores[indexOfActiveUser] += score;
-                usersScores[indexOfInactiveUser] -= score;
+            if (hScore > 0) {
                 isPossible = true;
+                //System.out.println(4);
+                if (confirmMoves) {
+                    confirmMove(checkLeftHorizontal(x, y, true));
+                }
             }
         }
-        //board.printArray();
         if (1 < x && 1 < y && arr[x - 1][y - 1] != emptyValue && arr[x - 1][y - 1] != active) {
-            if (mScore.score > 0) {
-                score = checkLeftMainDiagonal(x, y, true);
-                usersScores[indexOfActiveUser] += score;
-                usersScores[indexOfInactiveUser] -= score;
+            if (mScore > 0) {
                 isPossible = true;
+                //System.out.println(5);
+                if (confirmMoves) {
+                    confirmMove(checkLeftMainDiagonal(x, y, true));
+                }
             }
         }
-        //board.printArray();
         if (x < size - 1 && y < size - 1 && arr[x + 1][y + 1] != emptyValue && arr[x + 1][y + 1] != active) {
-            if (mScore.score > 0) {
-                score = checkRightMainDiagonal(x, y, true);
-                usersScores[indexOfActiveUser] += score;
-                usersScores[indexOfInactiveUser] -= score;
+            if (mScore > 0) {
                 isPossible = true;
+                //System.out.println(6);
+                if (confirmMoves) {
+                    confirmMove(checkRightMainDiagonal(x, y, true));
+                }
             }
         }
-        //board.printArray();
         if (x < size - 1 && 1 < y && arr[x + 1][y - 1] != emptyValue && arr[x + 1][y - 1] != active) {
-            if (aScore.score > 0) {
-                score = checkLeftAntiDiagonal(x, y, true);
-                usersScores[indexOfActiveUser] += score;
-                usersScores[indexOfInactiveUser] -= score;
+            if (aScore > 0) {
                 isPossible = true;
+                // System.out.println(7);
+                if (confirmMoves) {
+                    confirmMove(checkLeftAntiDiagonal(x, y, true));
+                }
             }
         }
-        //board.printArray();
         if (1 < x && y < size - 1 && arr[x - 1][y + 1] != emptyValue && arr[x - 1][y + 1] != active) {
-            if (aScore.score > 0) {
-                score = checkRightAntiDiagonal(x, y, true);
-                usersScores[indexOfActiveUser] += score;
-                usersScores[indexOfInactiveUser] -= score;
+            if (aScore > 0) {
                 isPossible = true;
+                //System.out.println(8);
+                if (confirmMoves) {
+                    confirmMove(checkRightAntiDiagonal(x, y, true));
+                }
             }
         }
-        //board.printArray();
         return isPossible;
     }
 
-    private MoveInfo getMoveScore(int a, int b) {
+    private void confirmMove(int score) {
+        usersScores[indexOfActiveUser] += score;
+        usersScores[indexOfInactiveUser] -= score;
+    }
+
+
+    private int getMoveScore(int a, int b) {
         //System.out.println("Score: " + a + " " + b);
         if (a > 0) {
-            return new MoveInfo(a, true);
+            return a;
         }
-        return new MoveInfo(b, false);
+        return b;
     }
 
     private int checkTopVertical(int row, int col, boolean needReplace) {
@@ -328,7 +368,6 @@ public class Reversi {
         return 0;
     }
 
-
     private int checkLeftMainDiagonal(int row, int col, boolean needReplace) {
         int leftCount = 0;
         for (int i = row - 1; i >= 0; i--) {
@@ -370,7 +409,6 @@ public class Reversi {
         }
         return 0;
     }
-
 
     private int checkLeftAntiDiagonal(int row, int col, boolean needReplace) {
         int leftCount = 0;
@@ -416,7 +454,7 @@ public class Reversi {
 
     private static class Board {
         private final int size;
-        private final int[][] arr;
+        private int[][] arr;
         private final int emptyValue = -1;
         private int emptyValuesQuantity;
 
@@ -442,6 +480,8 @@ public class Reversi {
             arr[size / 2][size / 2] = 0;
             arr[size / 2 - 1][size / 2] = 1;
             arr[size / 2][size / 2 - 1] = 1;
+            // arr = new int[][]{{0, 0, 0, -1}, {1, 1, 0, 0}, {1, 1, 0, 0}, {1, 1, 1, 0}};
+            //arr = new int[][]{{0, 0, 0, 0}, {0,0,0,0}, {1,1,1,1}, {1,1,1,1}};
         }
 
         private void setDefaultBoard() {
