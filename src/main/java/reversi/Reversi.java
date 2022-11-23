@@ -110,10 +110,12 @@ public class Reversi {
     private MoveCoords getBotCoords() throws NotFoundMoveException {
         for (int i = 0; i < board.size; i++) {
             for (int j = 0; j < board.size; j++) {
-                if (checkMovePossibility(i, j, false)) {
-                    System.out.printf("Bot try (%d %d)\n", i + 1, j + 1);
+                if (board.arr[i][j] == board.emptyValue) {
+                    if (checkMovePossibility(i, j, false)) {
+                        System.out.printf("Bot try (%d %d)\n", i + 1, j + 1);
 //                    checkMovePossibility(i, j, true);
-                    return new MoveCoords(i, j);
+                        return new MoveCoords(i, j);
+                    }
                 }
             }
         }
@@ -123,7 +125,8 @@ public class Reversi {
 
     private void makeBotMove(MoveCoords botCoords) {
         board.setValue(botCoords.x, botCoords.y, user2Value);
-//        checkMovePossibility(botCoords.x, botCoords.y, true);
+        checkMovePossibility(botCoords.x, botCoords.y, true);
+        usersScores[user2Value] += 1;
         System.out.printf("Bot move is: (%d %d)\n", botCoords.x + 1, botCoords.y + 1);
     }
 
@@ -304,7 +307,7 @@ public class Reversi {
         int topCount = 0;
         for (int i = row + 1; i < board.size; i++) {
             if (board.arr[i][col] == indexOfInactiveUser) {
-                if (needReplace) {
+                if (needReplace && i < board.size - 1) {
                     board.arr[i][col] = indexOfActiveUser;
                 }
                 topCount++;
@@ -355,7 +358,7 @@ public class Reversi {
         int rightCount = 0;
         for (int j = col + 1; j < board.size; j++) {
             if (board.arr[row][j] == indexOfInactiveUser) {
-                if (needReplace) {
+                if (needReplace && j < board.size - 1) {
                     board.arr[row][j] = indexOfActiveUser;
                 }
                 rightCount++;
@@ -374,7 +377,7 @@ public class Reversi {
             for (int j = col - 1; j >= 0; j--) {
                 if (i - row == j - col) {
                     if (board.arr[i][j] == indexOfInactiveUser) {
-                        if (needReplace) {
+                        if (needReplace && i > 0 && j > 0) {
                             board.arr[i][j] = indexOfActiveUser;
                         }
                         leftCount++;
@@ -395,7 +398,7 @@ public class Reversi {
             for (int j = col + 1; j < board.size; j++) {
                 if (i - row == j - col) {
                     if (board.arr[i][j] == indexOfInactiveUser) {
-                        if (needReplace) {
+                        if (needReplace && i < board.size - 1 && j < board.size - 1) {
                             board.arr[i][j] = indexOfActiveUser;
                         }
                         rightCount++;
@@ -416,7 +419,7 @@ public class Reversi {
             for (int j = col - 1; j >= 0; j--) {
                 if (i + j == row + col) {
                     if (board.arr[i][j] == indexOfInactiveUser) {
-                        if (needReplace) {
+                        if (needReplace && i < board.size - 1 && j > 0) {
                             board.arr[i][j] = indexOfActiveUser;
                         }
                         leftCount++;
@@ -437,7 +440,7 @@ public class Reversi {
             for (int j = col + 1; j < board.size; j++) {
                 if (i + j == row + col) {
                     if (board.arr[i][j] == indexOfInactiveUser) {
-                        if (needReplace) {
+                        if (needReplace && i > 0 && j < board.size - 1) {
                             board.arr[i][j] = indexOfActiveUser;
                         }
                         rightCount++;
@@ -482,6 +485,14 @@ public class Reversi {
             arr[size / 2][size / 2 - 1] = 1;
             // arr = new int[][]{{0, 0, 0, -1}, {1, 1, 0, 0}, {1, 1, 0, 0}, {1, 1, 1, 0}};
             //arr = new int[][]{{0, 0, 0, 0}, {0,0,0,0}, {1,1,1,1}, {1,1,1,1}};
+            //arr = new int[][]{{0, 1, -1, 1}, {-1, 0, 1, 0}, {-1, 1, 0, -1}, {-1, -1, -1, -1}};
+            // arr = new int[][]{{1, -1, 1, 0}, {-1, 1, 1, 0}, {-1, 0, 0, -1}, {-1, -1, -1, -1}};
+//            arr = new int[][]{
+//                    {1, 0, -1, -1},
+//                    {-1, 1, 0, -1},
+//                    {1, 1, 0, -1},
+//                    {0, 1, 0, -1},
+//            };
         }
 
         private void setDefaultBoard() {
