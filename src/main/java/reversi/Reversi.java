@@ -2,6 +2,7 @@ package reversi;
 
 import exceptions.NotFoundMoveException;
 
+import java.util.InputMismatchException;
 import java.util.Scanner;
 
 public class Reversi {
@@ -31,7 +32,9 @@ public class Reversi {
             isConfigReady = true;
             System.out.println("Game config is set successfully.");
         } catch (IllegalArgumentException ex) {
-            System.out.println(ex.getMessage());
+            Menu.showExceptionMessage(ex.getMessage());
+        } catch (InputMismatchException ex) {
+            Menu.showExceptionMessage("Incorrect input.");
         }
     }
 
@@ -53,11 +56,11 @@ public class Reversi {
     private void playGame() {
         try {
             board.printBoard();
-            System.out.printf("SCORE: ->User 1<- %d | %d ->User 2<-\n", usersScores[0], usersScores[1]);
+            Menu.showUsersScore(usersScores[0], usersScores[1]);
             if (!isGameOver()) {
                 if (isAnyMoves()) {
                     if (gameConfig.usersQuantity() == 2 || indexOfActiveUser == user1Value) {
-                        System.out.println("HAVE FUTURE MOVE");
+                        //System.out.println("HAVE FUTURE MOVE");
                         MoveCoords userCoords = getMoveCoords();
                         makeMove(userCoords);
                     } else if (gameConfig.usersQuantity() == 1 && indexOfActiveUser == user2Value) {
@@ -70,10 +73,10 @@ public class Reversi {
                 }
             }
         } catch (IllegalArgumentException ex) {
-            System.out.println(ex.getMessage());
+            Menu.showExceptionMessage(ex.getMessage());
         } catch (NotFoundMoveException ex) {
             setActiveUser();
-            System.out.println(ex.getMessage());
+            Menu.showExceptionMessage(ex.getMessage());
             skipRoundCounter++;
             if (skipRoundCounter == 2) {
                 findWinner();
@@ -112,7 +115,7 @@ public class Reversi {
             for (int j = 0; j < board.size; j++) {
                 if (board.arr[i][j] == board.emptyValue) {
                     if (checkMovePossibility(i, j, false)) {
-                        System.out.printf("Bot try (%d %d)\n", i + 1, j + 1);
+                        //System.out.printf("Bot try (%d %d)\n", i + 1, j + 1);
 //                    checkMovePossibility(i, j, true);
                         return new MoveCoords(i, j);
                     }
@@ -127,7 +130,7 @@ public class Reversi {
         board.setValue(botCoords.x, botCoords.y, user2Value);
         checkMovePossibility(botCoords.x, botCoords.y, true);
         usersScores[user2Value] += 1;
-        System.out.printf("Bot move is: (%d %d)\n", botCoords.x + 1, botCoords.y + 1);
+        Menu.showMessageForUser(String.format("Bot move is: (%d %d)\n", botCoords.x + 1, botCoords.y + 1));
     }
 
     private boolean isGameOver() {
@@ -161,10 +164,15 @@ public class Reversi {
     }
 
     private MoveCoords getMoveCoords() {
-        Scanner sc = new Scanner(System.in);
-        System.out.printf("User %d: enter move coords(int int):\n", indexOfActiveUser + 1);
-        int x = sc.nextInt(), y = sc.nextInt();
-        return new MoveCoords(x - 1, y - 1);
+        try {
+            Scanner sc = new Scanner(System.in);
+            Menu.showMessageForUser(String.format("User %d: enter move coords(int int):\n", indexOfActiveUser + 1));
+            int x = sc.nextInt(), y = sc.nextInt();
+            return new MoveCoords(x - 1, y - 1);
+        } catch (InputMismatchException ex) {
+            Menu.showExceptionMessage("Incorrect input.");
+        }
+        return new MoveCoords(0, 0);
     }
 
     private void makeMove(MoveCoords coords) {
@@ -537,9 +545,9 @@ public class Reversi {
                             var el = arr[i / 2 - 1][j - 1];
                             if (el != emptyValue) {
                                 if (el == 0) {
-                                    System.out.print(" @ |");
+                                    System.out.print(Menu.ANSI_GREEN + " @ " + Menu.ANSI_RESET + "|");
                                 } else {
-                                    System.out.print(" O |");
+                                    System.out.print(Menu.ANSI_YELLOW + " $ " + Menu.ANSI_RESET + "|");
                                 }
                                 //System.out.printf(" %d |", el + 1);
                             } else {
@@ -568,6 +576,16 @@ public class Reversi {
     }
 
     private static class Menu {
+        public static final String ANSI_RESET = "\u001B[0m";
+        public static final String ANSI_BLACK = "\u001B[30m";
+        public static final String ANSI_RED = "\u001B[31m";
+        public static final String ANSI_GREEN = "\u001B[32m";
+        public static final String ANSI_YELLOW = "\u001B[33m";
+        public static final String ANSI_BLUE = "\u001B[34m";
+        public static final String ANSI_PURPLE = "\u001B[35m";
+        public static final String ANSI_CYAN = "\u001B[36m";
+        public static final String ANSI_WHITE = "\u001B[37m";
+
         public static void run() {
             boolean isMenuRunning = true;
             Scanner sc = new Scanner(System.in);
@@ -587,10 +605,30 @@ public class Reversi {
                         System.out.println("You have left game. Have a nice day!");
                     }
                     default -> {
-                        System.out.println("Invalid option. Repeat.");
+                        showExceptionMessage("Invalid option. Repeat.");
                     }
                 }
             }
+        }
+
+        public static void showExceptionMessage(String m) {
+            System.out.println(ANSI_RED + m + ANSI_RESET);
+        }
+
+        public static void showMessageForUser(String m) {
+            if (indexOfActiveUser == user1Value) {
+                System.out.println(ANSI_GREEN + m + ANSI_RESET);
+            } else {
+                System.out.println(ANSI_YELLOW + m + ANSI_RESET);
+            }
+        }
+
+        public static void showGameResult() {
+
+        }
+
+        public static void showUsersScore(int score1, int score2) {
+            System.out.printf("SCORE: " + ANSI_GREEN + "->User 1<- %d" + ANSI_RESET + " | " + ANSI_YELLOW + "%d ->User 2<-\n" + ANSI_RESET, score1, score2);
         }
 
         public static void showIntroduction() {
