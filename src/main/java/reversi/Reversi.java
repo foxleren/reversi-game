@@ -7,7 +7,7 @@ import utils.Reader;
 
 import java.util.Scanner;
 
-public class Reversi extends Game implements Runnable {
+public class Reversi extends Game {
     //private static GameConfig gameConfig;
 
     private static boolean isAppRunning = true;
@@ -38,7 +38,6 @@ public class Reversi extends Game implements Runnable {
     private static Player user1;
     private static Player user2;
 
-    @Override
     public void run() {
         Printer.printIntroduction();
         while (isAppRunning) {
@@ -56,11 +55,6 @@ public class Reversi extends Game implements Runnable {
                 }
             }
         }
-    }
-
-    @Override
-    public void shutdown() {
-
     }
 
     @Override
