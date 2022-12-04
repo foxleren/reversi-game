@@ -3,20 +3,32 @@ package utils;
 import java.util.Scanner;
 
 public class Reader {
-    private static final int CODE_EXIT = -1;
-    private static final int CODE_BACK = -2;
-    private static final int CODE_MENU = -3;
-    private static final int CODE_UNKNOWN = -4;
+    public enum ReaderCodes {
+        CODE_EXIT(-1),
+
+        CODE_BACK(-2),
+
+        CODE_MENU(-3),
+
+        CODE_UNKNOWN(-4);
+
+        private final int code;
+
+        ReaderCodes(int code) {
+            this.code = code;
+        }
+
+        public int getCode() {
+            return code;
+        }
+    }
 
     public static boolean tryReadExit(int val) {
-        //Printer.printSystemMessage("You have left game. Have a nice day.");
-        return val == CODE_EXIT;
+        return val == ReaderCodes.CODE_EXIT.code;
     }
 
     public static boolean tryReadBack(int val) {
-        //System.out.println("Pressed MOVE BACK");
-        //makeMoveBack();
-        return val == CODE_BACK;
+        return val == ReaderCodes.CODE_BACK.code;
     }
 
     public static int readData() {
@@ -32,20 +44,14 @@ public class Reader {
 
     public static int readKeyWord(String word) {
         if (word.equals("exit")) {
-            //Printer.printSystemMessage("Pressed EXIT");
-            //isAppRunning = false;
-            return CODE_EXIT;
+            return ReaderCodes.CODE_EXIT.getCode();
         }
         if (word.equals("menu")) {
-            //Printer.printSystemMessage("Pressed MENU");
-            //isGameRunning = false;
-            return CODE_MENU;
+            return ReaderCodes.CODE_MENU.getCode();
         }
         if (word.equals("back")) {
-            //Printer.printSystemMessage("Pressed BACK");
-            return CODE_BACK;
+            return ReaderCodes.CODE_BACK.getCode();
         }
-        //Printer.printSystemMessage("Unknown command.");
-        return CODE_UNKNOWN;
+        return ReaderCodes.CODE_UNKNOWN.getCode();
     }
 }

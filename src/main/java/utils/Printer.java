@@ -51,6 +51,12 @@ public class Printer {
     }
 
     public static void printMenu() {
-        System.out.println("--->Menu<--- \n1. Start game\n2. End game");
+        System.out.println("--->Menu<--- \n1. Start game\n2. Show stats\n3. End game");
+    }
+
+    public static void printSessionStats(int score1, int score2) {
+        System.out.println("----->Session stats<-----\n");
+        System.out.printf("User 1: %d\n", score1);
+        System.out.printf("User 2: %d\n", score2);
     }
 }

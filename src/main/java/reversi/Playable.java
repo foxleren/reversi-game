@@ -10,7 +10,7 @@ public interface Playable {
 
     Reversi.MoveCoords getBotCoords(Board board) throws NotFoundMoveException;
 
-    void makeMove(Reversi.MoveCoords coords);
+    void makeMove(Reversi.MoveCoords coords, Board board);
 
     Board makeMoveBack();
 
