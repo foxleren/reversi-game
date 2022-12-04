@@ -113,15 +113,12 @@ public class Reversi extends Game {
     }
 
     private void runMenu() {
-        boolean isMenuRunning = true;
         Scanner sc = new Scanner(System.in);
         int option;
-        //while (isMenuRunning) {
         Printer.printMenu();
         option = sc.nextInt();
         switch (option) {
             case 1 -> {
-                isMenuRunning = false;
                 isGameRunning = true;
                 Printer.printSystemMessage("You have started game init.");
             }
