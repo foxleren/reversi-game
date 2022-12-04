@@ -6,11 +6,18 @@ public class Board {
     private final int size;
     private int[][] arr;
     private final int emptyValue = -1;
-    private int emptyValuesQuantity;
+
+    public void setArr(int[][] arr) {
+        this.arr = arr;
+    }
+
+    //private int emptyValuesQuantity;
+
+    private int possibleMoveCount = 0;
 
     public Board(int size) {
         this.size = size;
-        this.emptyValuesQuantity = size * size - 4;
+        //this.emptyValuesQuantity = size * size - 4;
         this.arr = new int[size][size];
         setDefaultPosition();
     }
@@ -50,9 +57,33 @@ public class Board {
         }
     }
 
+    public void setPossibleMoveCount(int possibleMoveCount) {
+        this.possibleMoveCount = possibleMoveCount;
+    }
+
     public void setValue(int x, int y, int value) {
+        //if (value == 1 || value == 0) {
+        //  possibleMoveCount--;
+        // System.out.printf("BOT: (%d, %d) BEFORE REPLACE (%d) \n", x + 1, y + 1, arr[x][y]);
+        //}
+        //if (arr[x][y] == 3) {
+        //  possibleMoveCount--;
+        // }
+        //if (value == 3) {
+        //   System.out.printf("(%d | %d) \n", x + 1, y + 1);
+        //possibleMoveCount++;
+        // System.out.println("POSS COUNTER: " + possibleMoveCount);
+        //}
+        //if (arr[x][y] == 3) {
+        //  System.out.printf(" \n POSS WILL BE REMOVED: (%d | %d) \n", x + 1, y + 1);
+        // possibleMoveCount--;
+        //1   System.out.println("POSS COUNTER: " + possibleMoveCount);
+        //}
         arr[x][y] = value;
-        emptyValuesQuantity--;
+//        if (arr[x][y] == 3) {
+//            possibleMoveCount++;
+//        }
+        //emptyValuesQuantity--;
     }
 
     public void printBoard() {
@@ -85,8 +116,10 @@ public class Board {
                         if (el != emptyValue) {
                             if (el == 0) {
                                 System.out.print(Printer.ANSI_GREEN + " @ " + Printer.ANSI_RESET + "|");
-                            } else {
+                            } else if (el == 1) {
                                 System.out.print(Printer.ANSI_YELLOW + " $ " + Printer.ANSI_RESET + "|");
+                            } else if (el == 3) {
+                                System.out.print(" * " + "|");
                             }
                             //System.out.printf(" %d |", el + 1);
                         } else {
@@ -109,8 +142,12 @@ public class Board {
         System.out.println();
     }
 
-    public int getEmptyValuesQuantity() {
-        return emptyValuesQuantity;
+//    public int getEmptyValuesQuantity() {
+//        return emptyValuesQuantity;
+//    }
+
+    public int getPossibleMoveCount() {
+        return possibleMoveCount;
     }
 
     public int[][] getArr() {

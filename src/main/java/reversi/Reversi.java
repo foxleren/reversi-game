@@ -27,6 +27,9 @@ public class Reversi extends Game {
 
     private static final int USER2_VALUE = 1;
 
+    private static final int EMPTY_VALUE = -1;
+    private static final int POSSIBLE_VALUE = 3;
+
     // private static final int[] usersScores = {0, 0};
 
     private static int skipRoundCounter = 0;
@@ -78,7 +81,7 @@ public class Reversi extends Game {
             }
             setGameConfig(new GameConfig(size, quantity));
             isConfigReady = true;
-            Printer.printSuccessMessage("reversi.interfaces.Game config is set successfully.");
+            Printer.printSuccessMessage("Game config is set successfully.");
         } catch (IllegalArgumentException ex) {
             Printer.printExceptionMessage(ex.getMessage());
         }
@@ -128,26 +131,40 @@ public class Reversi extends Game {
 
     private void playGame() {
         try {
+            tryFindMove();
             board.printBoard();
             Printer.printUsersScore(user1.getUserScore(), user2.getUserScore(), roundCounter);
             if (!isGameOver()) {
-                if (isAnyMoves()) {
-                    MoveCoords coords;
-                    if (indexOfActiveUser == user1.getIndexOfUser()) {
-                        coords = user1.getUserCoords();
-                        user1.makeMove(coords);
-                    } else {
-                        if (getGameConfig().usersQuantity() == 2) {
-                            coords = user2.getUserCoords();
-                        } else {
-                            coords = user2.getBotCoords(board);
-                        }
-                        user2.makeMove(coords);
-                    }
+                // if (isAnyMoves()) {
+                MoveCoords coords;
+                if (indexOfActiveUser == user1.getIndexOfUser()) {
+                    //if (roundCounter == 1) {
+                    Printer.printExceptionMessage("BACKUP");
+                    user1.backupMove(board);
+                    //}
+                    coords = user1.getUserCoords();
+                    user1.makeMove(coords);
+//                    if (roundCounter > 1) {
+//                        Printer.printExceptionMessage("BACKUP");
+//                        user1.backupMove(board);
+//                    }
+                    //Printer.printSystemMessage("BACKUPING FOR USER 1");
                 } else {
-                    throw new NotFoundMoveException(String.format("User %d has skipped round", indexOfActiveUser + 1));
+                    if (getGameConfig().usersQuantity() == 2) {
+                        //user2.backupMove(board);
+                        coords = user2.getUserCoords();
+                    } else {
+                        coords = user2.getBotCoords(board);
+                    }
+                    user2.makeMove(coords);
+//                    if (roundCounter > 1) {
+//                        user1.backupMove(board);
+//                    }
                 }
+            } else {
+                throw new NotFoundMoveException(String.format("User %d has skipped round", indexOfActiveUser + 1));
             }
+            // }
             setNextRound();
         } catch (IllegalArgumentException ex) {
             Printer.printExceptionMessage(ex.getMessage());
@@ -156,14 +173,60 @@ public class Reversi extends Game {
             Printer.printExceptionMessage(ex.getMessage());
             skipRoundCounter++;
             if (skipRoundCounter == 2) {
+                board.printBoard();
+                Printer.printUsersScore(user1.getUserScore(), user2.getUserScore(), roundCounter);
                 findWinner();
                 isGameRunning = false;
             }
         } catch (MoveBackException ex) {
             Printer.printSystemMessage(ex.getMessage());
+
+            if (indexOfActiveUser == user1.getIndexOfUser()) {
+                board = user1.makeMoveBack();
+                roundCounter--;
+                //setActiveUser();
+                setUsersScore();
+                //board.setArr(user1.makeMoveBack());
+                //  board = user1.makeMoveBack();
+                //board.printBoard();
+            }
+            //setActiveUser();
             //makeMoveBack();
             //isPrevMoveBack = true;
             //makeMoveBack();
+        }
+    }
+
+    private void tryFindMove() throws NotFoundMoveException {
+        int possibleMoveCount = 0;
+        int emptyValuesQuantity = 0;
+        var arr = board.getArr();
+        int size = board.getSize(), emptyValue = board.getEmptyValue();
+        //int possibleMoveCount = 0;
+        System.out.print("Possible moves: ");
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                if (arr[i][j] == POSSIBLE_VALUE) {
+                    board.setValue(i, j, EMPTY_VALUE);
+                    //arr[i][j] = EMPTY_VALUE;
+                }
+                if (arr[i][j] == EMPTY_VALUE) {
+                    emptyValuesQuantity++;
+                    if (tryNextMove(i, j, false) > 0) {
+                        board.setValue(i, j, POSSIBLE_VALUE);
+                        possibleMoveCount++;
+                        System.out.printf(" (%d, %d)", i + 1, j + 1);
+                    }
+                }
+            }
+        }
+        board.setPossibleMoveCount(possibleMoveCount);
+        System.out.println();
+        if (emptyValuesQuantity == 0) {
+            throw new NotFoundMoveException("Board is full.");
+        }
+        if (possibleMoveCount == 0) {
+            throw new NotFoundMoveException(String.format("User %d has skipped round.", indexOfActiveUser + 1));
         }
     }
 
@@ -185,7 +248,8 @@ public class Reversi extends Game {
 //    }
 
     private boolean isGameOver() {
-        if (board.getEmptyValuesQuantity() == 0) {
+        Printer.printSystemMessage("IS GAME OVER ? " + board.getPossibleMoveCount());
+        if (board.getPossibleMoveCount() == 0) {
             findWinner();
             isGameRunning = false;
             return true;
@@ -195,34 +259,34 @@ public class Reversi extends Game {
 
     private void findWinner() {
         if (user1.getUserScore() > user2.getUserScore()) {
-            System.out.println("reversi.interfaces.Game over. User 1 has won!\n");
+            System.out.println("Game over. User 1 has won!\n");
         } else if (user1.getUserScore() < user2.getUserScore()) {
-            System.out.println("reversi.interfaces.Game over. User 2 has won!\n");
+            System.out.println("Game over. User 2 has won!\n");
         } else {
-            System.out.println("reversi.interfaces.Game over. The game ended in a draw.\n");
+            System.out.println("Game over. The game ended in a draw.\n");
         }
     }
 
-    private boolean isAnyMoves() throws NotFoundMoveException {
-        int emptyValuesQuantity = 0;
-        var arr = board.getArr();
-        int size = board.getSize(), emptyValue = board.getEmptyValue();
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                if (arr[i][j] == emptyValue) {
-                    emptyValuesQuantity += 1;
-                    if (tryNextMove(i, j, false)) {
-                        System.out.println("ABLE: " + (i + 1) + " " + (j + 1));
-                        return true;
-                    }
-                }
-            }
-        }
-        if (emptyValuesQuantity == 0) {
-            throw new NotFoundMoveException("Board is full.");
-        }
-        throw new NotFoundMoveException(String.format("User %d has skipped round.", indexOfActiveUser + 1));
-    }
+//    private boolean isAnyMoves() throws NotFoundMoveException {
+//        int emptyValuesQuantity = 0;
+//        var arr = board.getArr();
+//        int size = board.getSize(), emptyValue = board.getEmptyValue();
+//        for (int i = 0; i < size; i++) {
+//            for (int j = 0; j < size; j++) {
+//                if (arr[i][j] == emptyValue) {
+//                    emptyValuesQuantity += 1;
+//                    if (tryNextMove(i, j, false)) {
+//                        System.out.println("ABLE: " + (i + 1) + " " + (j + 1));
+//                        return true;
+//                    }
+//                }
+//            }
+//        }
+//        if (emptyValuesQuantity == 0) {
+//            throw new NotFoundMoveException("Board is full.");
+//        }
+//        throw new NotFoundMoveException(String.format("User %d has skipped round.", indexOfActiveUser + 1));
+//    }
 
     private void setActiveUser() {
         indexOfActiveUser ^= 1;
@@ -234,28 +298,37 @@ public class Reversi extends Game {
             if (x < 0 || x >= board.getSize() || y < 0 || y >= board.getSize()) {
                 throw new IllegalArgumentException("Error: incorrect coords.");
             }
-            if (board.getArr()[x][y] != board.getEmptyValue()) {
+            if (board.getArr()[x][y] != board.getEmptyValue() && board.getArr()[x][y] != POSSIBLE_VALUE) {
                 throw new IllegalArgumentException("Error: these coords have already been occupied.");
             }
         }
     }
 
-    private MoveCoords getBotCoords() throws NotFoundMoveException {
-        var arr = board.getArr();
-        int size = board.getSize(), emptyValue = board.getEmptyValue();
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                if (arr[i][j] == emptyValue) {
-                    if (tryNextMove(i, j, false)) {
-                        //System.out.printf("Bot try (%d %d)\n", i + 1, j + 1);
-//                    checkMovePossibility(i, j, true);
-                        return new MoveCoords(i, j);
-                    }
-                }
-            }
-        }
-        throw new NotFoundMoveException(String.format("User %d has skipped round", indexOfActiveUser + 1));
-    }
+//    private MoveCoords getBotCoords() throws NotFoundMoveException {
+//        var arr = board.getArr();
+//        int size = board.getSize(), emptyValue = board.getEmptyValue();
+//        int maxScore = 0;
+//        int maxI = -1, maxJ = -1;
+//        for (int i = 0; i < size; i++) {
+//            for (int j = 0; j < size; j++) {
+//                if (arr[i][j] == emptyValue) {
+//                    var score = tryNextMove(i, j, false);
+//                    if (score > maxScore) {
+//                        //System.out.printf("Bot try (%d %d)\n", i + 1, j + 1);
+////                    checkMovePossibility(i, j, true);
+//                        maxI = i;
+//                        maxJ = j;
+//                        maxScore = score;
+//                        //return new MoveCoords(i, j);
+//                    }
+//                }
+//            }
+//        }
+//        if (maxScore > 0) {
+//            return new MoveCoords(maxI, maxI);
+//        }
+//        throw new NotFoundMoveException(String.format("User %d has skipped round", indexOfActiveUser + 1));
+//    }
 
     private void makeBotMove(MoveCoords botCoords) {
 //        board.setValue(botCoords.x, botCoords.y, user2Value);
@@ -286,9 +359,34 @@ public class Reversi extends Game {
 
     public static void addMoveToBoard(int x, int y, int index) {
         board.setValue(x, y, index);
+        board.setPossibleMoveCount(board.getPossibleMoveCount() + 1);
     }
 
-    public static boolean tryNextMove(int x, int y, boolean confirmMoves) {
+//    record MoveResult(int x, int y, int score) {
+//
+//    }
+
+    static class MoveResult {
+        public int getScore() {
+            return score;
+        }
+
+        public void setScore(int score) {
+            this.score = score;
+        }
+
+        private int x;
+        private int y;
+        private int score = 0;
+
+        public MoveResult(int x, int y, int score) {
+            this.x = x;
+            this.y = y;
+            this.score = score;
+        }
+    }
+
+    public static int tryNextMove(int x, int y, boolean confirmMoves) {
         int active = indexOfActiveUser;
         var arr = board.getArr();
         var size = board.getSize();
@@ -311,10 +409,12 @@ public class Reversi extends Game {
 //        System.out.println("Coords: " + (x + 1) + " " + (y + 1));
 
         boolean isPossible = false;
+        //MoveResult res = new MoveResult(x, y, 0);
+        int score = 0;
         if (x < size - 1 && arr[x + 1][y] != emptyValue && arr[x + 1][y] != active) {
             if (vScore > 0) {
                 isPossible = true;
-                //System.out.println(1);
+                score += vScore;
                 if (confirmMoves) {
                     confirmMove(checkTopVertical(x, y, true));
                 }
@@ -323,7 +423,7 @@ public class Reversi extends Game {
         if (1 < x && arr[x - 1][y] != emptyValue && arr[x - 1][y] != active) {
             if (vScore > 0) {
                 isPossible = true;
-                //System.out.println(2);
+                score += vScore;
                 if (confirmMoves) {
                     confirmMove(checkBottomVertical(x, y, true));
                 }
@@ -332,7 +432,7 @@ public class Reversi extends Game {
         if (y < size - 1 && arr[x][y + 1] != emptyValue && arr[x][y + 1] != active) {
             if (hScore > 0) {
                 isPossible = true;
-                //System.out.println(3);
+                score += hScore;
                 if (confirmMoves) {
                     confirmMove(checkRightHorizontal(x, y, true));
                 }
@@ -341,7 +441,7 @@ public class Reversi extends Game {
         if (1 < y && arr[x][y - 1] != emptyValue && arr[x][y - 1] != active) {
             if (hScore > 0) {
                 isPossible = true;
-                //System.out.println(4);
+                score += hScore;
                 if (confirmMoves) {
                     confirmMove(checkLeftHorizontal(x, y, true));
                 }
@@ -350,7 +450,7 @@ public class Reversi extends Game {
         if (1 < x && 1 < y && arr[x - 1][y - 1] != emptyValue && arr[x - 1][y - 1] != active) {
             if (mScore > 0) {
                 isPossible = true;
-                //System.out.println(5);
+                score += mScore;
                 if (confirmMoves) {
                     confirmMove(checkLeftMainDiagonal(x, y, true));
                 }
@@ -359,7 +459,7 @@ public class Reversi extends Game {
         if (x < size - 1 && y < size - 1 && arr[x + 1][y + 1] != emptyValue && arr[x + 1][y + 1] != active) {
             if (mScore > 0) {
                 isPossible = true;
-                //System.out.println(6);
+                score += mScore;
                 if (confirmMoves) {
                     confirmMove(checkRightMainDiagonal(x, y, true));
                 }
@@ -368,7 +468,7 @@ public class Reversi extends Game {
         if (x < size - 1 && 1 < y && arr[x + 1][y - 1] != emptyValue && arr[x + 1][y - 1] != active) {
             if (aScore > 0) {
                 isPossible = true;
-                // System.out.println(7);
+                score += aScore;
                 if (confirmMoves) {
                     confirmMove(checkLeftAntiDiagonal(x, y, true));
                 }
@@ -377,17 +477,17 @@ public class Reversi extends Game {
         if (1 < x && y < size - 1 && arr[x - 1][y + 1] != emptyValue && arr[x - 1][y + 1] != active) {
             if (aScore > 0) {
                 isPossible = true;
-                //System.out.println(8);
+                score += aScore;
                 if (confirmMoves) {
                     confirmMove(checkRightAntiDiagonal(x, y, true));
                 }
             }
         }
-        return isPossible;
+        return score;
     }
 
     private static void confirmMove(int score) {
-        System.out.println("SCore" + score);
+        //System.out.println("SCore" + score);
         if (indexOfActiveUser == user1.getIndexOfUser()) {
             user1.setUserScore(user1.getUserScore() + score);
             user2.setUserScore(user2.getUserScore() - score);

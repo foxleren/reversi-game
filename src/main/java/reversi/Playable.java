@@ -12,7 +12,7 @@ public interface Playable {
 
     void makeMove(Reversi.MoveCoords coords);
 
-    void makeMoveBack();
+    Board makeMoveBack();
 
     void backupMove(Board board);
 }

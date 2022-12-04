@@ -5,10 +5,10 @@ import exceptions.NotFoundMoveException;
 import utils.Printer;
 import utils.Reader;
 
+import java.util.Arrays;
 import java.util.Stack;
 
-import static reversi.Reversi.addMoveToBoard;
-import static reversi.Reversi.tryNextMove;
+import static reversi.Reversi.*;
 
 public class Player implements Playable {
     private int indexOfUser;
@@ -59,16 +59,28 @@ public class Player implements Playable {
     public Reversi.MoveCoords getBotCoords(Board board) throws NotFoundMoveException {
         var arr = board.getArr();
         int size = board.getSize(), emptyValue = board.getEmptyValue();
+        int maxScore = 0;
+        int maxI = -1, maxJ = -1;
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
+                if (arr[i][j] == 3) {
+                    arr[i][j] = -1;
+                }
                 if (arr[i][j] == emptyValue) {
-                    if (tryNextMove(i, j, false)) {
+                    var score = tryNextMove(i, j, false);
+                    if (score > maxScore) {
                         //System.out.printf("Bot try (%d %d)\n", i + 1, j + 1);
 //                    checkMovePossibility(i, j, true);
-                        return new Reversi.MoveCoords(i, j);
+                        maxScore = score;
+                        maxI = i;
+                        maxJ = j;
+                        //return new Reversi.MoveCoords(i, j);
                     }
                 }
             }
+        }
+        if (maxScore > 0) {
+            return new MoveCoords(maxI, maxJ);
         }
         throw new NotFoundMoveException(String.format("User %d has skipped round", getIndexOfUser() + 1));
     }
@@ -76,7 +88,7 @@ public class Player implements Playable {
     @Override
     public void makeMove(Reversi.MoveCoords coords) {
         int x = coords.x(), y = coords.y();
-        if (!tryNextMove(x, y, false)) {
+        if (tryNextMove(x, y, false) == 0) {
             throw new IllegalArgumentException("Error: move isn't possible!");
         }
         tryNextMove(x, y, true);
@@ -85,12 +97,30 @@ public class Player implements Playable {
     }
 
     @Override
-    public void makeMoveBack() {
-
+    public Board makeMoveBack() {
+        if (boardBackup.size() > 1) {
+            var b = boardBackup.get(boardBackup.size() - 2);
+            boardBackup.pop();
+            boardBackup.pop();
+            //return boardBackup.get(boardBackup.size() - 2);
+            return b;
+        }
+        var b = boardBackup.peek();
+        //return boardBackup.peek();
+        boardBackup.pop();
+        return b;
     }
 
     @Override
     public void backupMove(Board board) {
-
+        var arr = board.getArr();
+        int[][] b = new int[board.getSize()][board.getSize()];
+        for (int i = 0; i < board.getSize(); i++) {
+            System.arraycopy(arr[i], 0, b[i], 0, board.getSize());
+        }
+        Board tmp = new Board(board.getSize());
+        tmp.setArr(b);
+        tmp.setPossibleMoveCount(board.getPossibleMoveCount());
+        boardBackup.push(tmp);
     }
 }
