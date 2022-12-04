@@ -14,16 +14,6 @@ import static utils.ArrayUtils.*;
 public class Player implements Playable {
     private final int indexOfUser;
 
-    public int getSessionScore() {
-        return sessionScore;
-    }
-
-
-    public void addScorePoint() {
-        sessionScore++;
-    }
-
-    private int sessionScore = 0;
     private int userScore = 0;
 
     private final Stack<Board> boardBackup = new Stack<>();

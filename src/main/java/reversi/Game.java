@@ -1,7 +1,10 @@
 package reversi;
 
 public abstract class Game {
-    private static GameConfig gameConfig;
+    protected static GameConfig gameConfig;
+
+    public record GameConfig(int boardSize, int gameMode) {
+    }
 
     abstract void initGameConfig();
 

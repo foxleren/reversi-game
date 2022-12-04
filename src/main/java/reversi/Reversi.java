@@ -48,7 +48,7 @@ public class Reversi extends Game {
             while (isGameRunning) {
                 initGameConfig();
                 if (isConfigReady) {
-                    board = new Board(getGameConfig().boardSize());
+                    board = new Board(gameConfig.boardSize());
                     user1 = new Player(Board.BoardValues.USER1.getCode());
                     user2 = new Player(Board.BoardValues.USER2.getCode());
                     roundCounter = 1;
@@ -189,14 +189,14 @@ public class Reversi extends Game {
                 coords = user1.getUserCoords();
                 user1.makeMove(coords, board);
             } else {
-                if (getGameConfig().gameMode() == GameMode.PVP.code) {
+                if (gameConfig.gameMode() == GameMode.PVP.code) {
                     printPossibleMoves();
                     coords = user2.getUserCoords();
                 } else {
                     coords = user2.getBotCoords(board);
                 }
                 user2.makeMove(coords, board);
-                if (getGameConfig().gameMode() != GameMode.PVP.code) {
+                if (gameConfig.gameMode() != GameMode.PVP.code) {
                     Printer.printMessageForUser2("BOT MADE MOVE (" + (coords.x + 1) + " , " + (coords.y + 1) + ")");
                 }
             }
@@ -234,7 +234,7 @@ public class Reversi extends Game {
             Printer.printExceptionMessage("Can't make move back. It's initial move.");
             return;
         }
-        if (indexOfActiveUser == user1.getIndexOfUser() && getGameConfig().gameMode() != GameMode.PVP.code) {
+        if (indexOfActiveUser == user1.getIndexOfUser() && gameConfig.gameMode() != GameMode.PVP.code) {
             board = user1.makeMoveBack();
             roundCounter--;
             setUsersScore();
