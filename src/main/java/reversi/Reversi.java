@@ -42,22 +42,26 @@ public class Reversi extends Game {
     private final int[] sessionScores = new int[2];
 
     public void run() {
-        Printer.printIntroduction();
-        while (isAppRunning) {
-            runMenu();
-            while (isGameRunning) {
-                initGameConfig();
-                if (isConfigReady) {
-                    board = new Board(gameConfig.boardSize());
-                    user1 = new Player(Board.BoardValues.USER1.getCode());
-                    user2 = new Player(Board.BoardValues.USER2.getCode());
-                    roundCounter = 1;
-                    skipRoundCounter = 0;
-                    while (isGameRunning) {
-                        playRound();
+        try {
+            Printer.printIntroduction();
+            while (isAppRunning) {
+                runMenu();
+                while (isGameRunning) {
+                    initGameConfig();
+                    if (isConfigReady) {
+                        board = new Board(gameConfig.boardSize());
+                        user1 = new Player(Board.BoardValues.USER1.getCode());
+                        user2 = new Player(Board.BoardValues.USER2.getCode());
+                        roundCounter = 1;
+                        skipRoundCounter = 0;
+                        while (isGameRunning) {
+                            playRound();
+                        }
                     }
                 }
             }
+        } catch (Exception ex) {
+            Printer.printExceptionMessage(ex.getMessage());
         }
     }
 
